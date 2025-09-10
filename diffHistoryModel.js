@@ -6,6 +6,8 @@ const historySchema = new Schema(
         collectionName: String,
         collectionId: Schema.Types.ObjectId,
         diff: {},
+        oldDocument: {},
+        newDocument: {},
         user: {},
         reason: String,
         version: { type: Number, min: 0 }

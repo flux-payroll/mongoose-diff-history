@@ -57,6 +57,21 @@ function saveDiffObject(currentObject, original, updated, opts, queryObject) {
     const collectionName =
         currentObject.constructor.modelName || queryObject.model.modelName;
 
+    // Store the complete old and new documents
+    let oldDocument = JSON.parse(JSON.stringify(original));
+    let newDocument = JSON.parse(JSON.stringify(updated));
+
+    // Apply omit/pick options to the stored documents if specified
+    if (opts.omit) {
+        oldDocument = omit(oldDocument, opts.omit);
+        newDocument = omit(newDocument, opts.omit);
+    }
+
+    if (opts.pick) {
+        oldDocument = pick(oldDocument, opts.pick);
+        newDocument = pick(newDocument, opts.pick);
+    }
+
     return History.findOne({ collectionId, collectionName })
         .sort('-version')
         .then(lastHistory => {
@@ -64,6 +79,8 @@ function saveDiffObject(currentObject, original, updated, opts, queryObject) {
                 collectionId,
                 collectionName,
                 diff,
+                oldDocument,
+                newDocument,
                 user,
                 reason,
                 version: lastHistory ? lastHistory.version + 1 : 0
