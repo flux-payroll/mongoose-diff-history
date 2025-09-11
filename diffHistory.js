@@ -10,6 +10,7 @@ const objectHash = (obj, idx) => obj._id || obj.id || `$$index: ${idx}`;
 const diffPatcher = require('jsondiffpatch').create({ objectHash });
 
 const History = require('./diffHistoryModel').model;
+const historySchema = require('./diffHistoryModel').schema;
 
 const isValidCb = cb => {
     return cb && typeof cb === 'function';
@@ -30,6 +31,10 @@ function checkRequired(opts, queryObject, updatedObject) {
     ) {
         return true;
     }
+}
+
+function getHistoryModelForConnection(connection) {
+    return connection.model('History', historySchema);
 }
 
 function saveDiffObject(currentObject, original, updated, opts, queryObject) {
@@ -72,10 +77,11 @@ function saveDiffObject(currentObject, original, updated, opts, queryObject) {
         newDocument = pick(newDocument, opts.pick);
     }
 
-    return History.findOne({ collectionId, collectionName })
+    historyModel = opts.historyModel || History;
+    return historyModel.findOne({ collectionId, collectionName })
         .sort('-version')
         .then(lastHistory => {
-            const history = new History({
+            const history = new historyModel({
                 collectionId,
                 collectionName,
                 diff,
@@ -147,17 +153,18 @@ const saveDiffs = (queryObject, opts) =>
         .cursor()
         .eachAsync(result => saveDiffHistory(queryObject, result, opts));
 
-const getVersion = (model, id, version, queryOpts, cb) => {
+const getVersion = (connection, model, id, version, queryOpts, cb) => {
     if (typeof queryOpts === 'function') {
         cb = queryOpts;
         queryOpts = undefined;
     }
 
+    const historyModel = getHistoryModelForConnection(connection);
     return model
         .findById(id, null, queryOpts)
         .then(latest => {
             latest = latest || {};
-            return History.find(
+            return historyModel.find(
                 {
                     collectionName: model.modelName,
                     collectionId: id,
@@ -182,13 +189,14 @@ const getVersion = (model, id, version, queryOpts, cb) => {
         });
 };
 
-const getDiffs = (modelName, id, opts, cb) => {
+const getDiffs = (connection, modelName, id, opts, cb) => {
     opts = opts || {};
     if (typeof opts === 'function') {
         cb = opts;
         opts = {};
     }
-    return History.find(
+    const historyModel = getHistoryModelForConnection(connection);
+    return historyModel.find(
         { collectionName: modelName, collectionId: id },
         null,
         opts
@@ -204,7 +212,7 @@ const getDiffs = (modelName, id, opts, cb) => {
         });
 };
 
-const getHistories = (modelName, id, expandableFields, cb) => {
+const getHistories = (connection, modelName, id, expandableFields, cb) => {
     expandableFields = expandableFields || [];
     if (typeof expandableFields === 'function') {
         cb = expandableFields;
@@ -212,8 +220,9 @@ const getHistories = (modelName, id, expandableFields, cb) => {
     }
 
     const histories = [];
+    const historyModel = getHistoryModelForConnection(connection);
 
-    return History.find({ collectionName: modelName, collectionId: id })
+    return historyModel.find({ collectionName: modelName, collectionId: id })
         .lean()
         .cursor()
         .eachAsync(history => {
@@ -278,6 +287,10 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
     // if (opts.connection) {
     //     History.useConnection(opts.connection);
     // }
+
+    if (opts.connection) {
+        opts.historyModel = getHistoryModelForConnection(opts.connection);
+    }
 
     if (opts.omit && !Array.isArray(opts.omit)) {
         if (typeof opts.omit === 'string') {

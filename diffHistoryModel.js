@@ -13,8 +13,9 @@ const historySchema = new Schema(
         version: { type: Number, min: 0 }
     },
     {
-        timestamps: true
+        timestamps: true,
+        collection: 'internals.histories'
     }
 );
 
-module.exports = { model: mongoose.model('History', historySchema, 'internal.histories') };
+module.exports = { model: mongoose.model('History', historySchema), schema: historySchema };
