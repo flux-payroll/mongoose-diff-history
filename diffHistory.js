@@ -262,11 +262,11 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
     if (opts.uri) {
         const mongoVersion = parseInt(mongoose.version);
         if (mongoVersion < 5) {
-            mongoose.connect(opts.uri, { useMongoClient: true }).catch(e => {
+            mongoose.connect(opts.uri, { ...opts.connectionOptions, useMongoClient: true }).catch(e => {
                 console.error('mongoose-diff-history connection error:', e);
             });
         } else {
-            mongoose.connect(opts.uri, { useNewUrlParser: true }).catch(e => {
+            mongoose.connect(opts.uri, { ...opts.connectionOptions, useNewUrlParser: true }).catch(e => {
                 console.error('mongoose-diff-history connection error:', e);
             });
         }
