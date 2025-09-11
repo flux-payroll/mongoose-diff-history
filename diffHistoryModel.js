@@ -17,4 +17,4 @@ const historySchema = new Schema(
     }
 );
 
-module.exports = { model: mongoose.model('History', historySchema) };
+module.exports = { model: mongoose.model('History', historySchema, 'internal.histories') };
