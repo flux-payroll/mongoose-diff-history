@@ -272,6 +272,10 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
         }
     }
 
+    if (opts.connection) {
+        History.useConnection(opts.connection);
+    }
+
     if (opts.omit && !Array.isArray(opts.omit)) {
         if (typeof opts.omit === 'string') {
             opts.omit = [opts.omit];
