@@ -272,9 +272,12 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
         }
     }
 
-    if (opts.connection) {
-        History.useConnection(opts.connection);
-    }
+    // NOTE(meshde): useConnection is broken in that it sets the name of the
+    // collection to be the model name so we can't use this and instead need to
+    // make sure that mongoose.connect is passed the right connection data
+    // if (opts.connection) {
+    //     History.useConnection(opts.connection);
+    // }
 
     if (opts.omit && !Array.isArray(opts.omit)) {
         if (typeof opts.omit === 'string') {
