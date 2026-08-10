@@ -301,9 +301,14 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
         }
     }
 
-    schema.pre('save', function (next) {
-        if (this.isNew) return next();
-        this.constructor
+    // Mongoose 9 removed the `next` callback from pre-middleware: hooks now
+    // resolve by returning (or returning a resolved promise) and abort by
+    // throwing / returning a rejected promise. Returning the promise directly
+    // keeps identical semantics and stays backward-compatible with Mongoose
+    // 5–8, which also accept a no-`next`, promise-returning pre-hook.
+    schema.pre('save', function () {
+        if (this.isNew) return;
+        return this.constructor
             .findOne({ _id: this._id })
             .then(original => {
                 if (checkRequired(opts, {}, this)) {
@@ -315,45 +320,35 @@ const plugin = function lastModifiedPlugin(schema, opts = {}) {
                     this.toObject({ depopulate: true }),
                     opts
                 );
-            })
-            .then(() => next())
-            .catch(next);
+            });
     });
 
-    schema.pre('findOneAndUpdate', function (next) {
+    schema.pre('findOneAndUpdate', function () {
         if (checkRequired(opts, this)) {
-            return next();
+            return;
         }
-        saveDiffs(this, opts)
-            .then(() => next())
-            .catch(next);
+        return saveDiffs(this, opts);
     });
 
-    schema.pre('update', function (next) {
+    schema.pre('update', function () {
         if (checkRequired(opts, this)) {
-            return next();
+            return;
         }
-        saveDiffs(this, opts)
-            .then(() => next())
-            .catch(next);
+        return saveDiffs(this, opts);
     });
 
-    schema.pre('updateOne', function (next) {
+    schema.pre('updateOne', function () {
         if (checkRequired(opts, this)) {
-            return next();
+            return;
         }
-        saveDiffs(this, opts)
-            .then(() => next())
-            .catch(next);
+        return saveDiffs(this, opts);
     });
 
-    schema.pre('remove', function (next) {
+    schema.pre('remove', function () {
         if (checkRequired(opts, this)) {
-            return next();
+            return;
         }
-        saveDiffObject(this, this, {}, opts)
-            .then(() => next())
-            .catch(next);
+        return saveDiffObject(this, this, {}, opts);
     });
 };
 
